@@ -1,0 +1,61 @@
+name: Deploy to Server
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      SERVER_HOST: 62.60.176.194
+      SERVER_USER: root
+      DEPLOY_PATH: /root/task
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install sshpass
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y sshpass
+
+      - name: Create deploy archive (exclude VCS, node_modules, and runtime data)
+        run: |
+          tar czf deploy.tar.gz \
+            --exclude='.git' \
+            --exclude='.github' \
+            --exclude='front/node_modules' \
+            --exclude='**/.DS_Store' \
+            --exclude='**/dist' \
+            --exclude='**/build' \
+            --exclude='back/var/*' \
+            .
+
+      - name: Upload archive to server
+        run: |
+          sshpass -p "${{ secrets.SERVER_PASSWORD }}" \
+            scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+            -P 22 deploy.tar.gz "${SERVER_USER}@${SERVER_HOST}:/root/deploy.tar.gz"
+
+      - name: Deploy and restart containers
+        run: |
+          sshpass -p "${{ secrets.SERVER_PASSWORD }}" \
+            ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -p 22 \
+            "${SERVER_USER}@${SERVER_HOST}" \
+            "set -euo pipefail; \
+             mkdir -p '${DEPLOY_PATH}'; \
+             tar xzf /root/deploy.tar.gz -C '${DEPLOY_PATH}'; \
+             rm -f /root/deploy.tar.gz; \
+             cd '${DEPLOY_PATH}'; \
+             if command -v docker compose >/dev/null 2>&1; then \
+               docker compose down || true; \
+               docker compose up -d --build; \
+             else \
+               docker-compose down || true; \
+               docker-compose up -d --build; \
+             fi"
+
+
