@@ -7,6 +7,7 @@ from urllib.parse import parse_qsl
 
 import jwt
 from fastapi import HTTPException, status
+from init_data_py import InitData
 
 from .config import get_settings
 
@@ -21,47 +22,40 @@ def verify_telegram_webapp_data(init_data: str) -> Dict[str, Any]:
     if not settings.telegram_bot_token:
         raise HTTPException(status_code=500, detail="TELEGRAM_BOT_TOKEN is not configured")
 
+    # Parse and validate using init-data-py
     try:
-        # Parse URL-encoded query string into decoded key-value pairs
-        pairs = parse_qsl(init_data, keep_blank_values=True, strict_parsing=True)
-        data = dict(pairs)
+        parsed = InitData.parse(init_data)
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid initData format")
 
-    hash_from_tg = data.pop("hash", None)
-    if not hash_from_tg:
-        raise HTTPException(status_code=400, detail="Missing hash in initData")
+    try:
+        is_valid = parsed.validate(bot_token=settings.telegram_bot_token, lifetime=60 * 60 * 24)
+    except Exception:
+        is_valid = False
 
-    # Telegram requires data-check-string: keys sorted, joined as key=value\n
-    lines = []
-    for key in sorted(data.keys()):
-        lines.append(f"{key}={data[key]}")
-    data_check_string = "\n".join(lines)
-
-    computed = _compute_telegram_webapp_hash(data_check_string, settings.telegram_bot_token)
-    if not hmac.compare_digest(computed, hash_from_tg):
+    if not is_valid:
         raise HTTPException(status_code=401, detail="Invalid Telegram signature")
 
-    # Optional: check auth_date is recent (e.g., 1 day)
-    auth_date_str = data.get("auth_date")
-    if auth_date_str:
-        try:
-            auth_ts = int(auth_date_str)
-            if time.time() - auth_ts > 60 * 60 * 24:
-                raise HTTPException(status_code=401, detail="Expired initData")
-        except ValueError:
-            raise HTTPException(status_code=400, detail="Invalid auth_date")
-
-    user_json = data.get("user")
+    # Extract user info
     user_obj: Dict[str, Any] = {}
-    if user_json:
-        try:
-            # Value already URL-decoded by parse_qsl
-            user_obj = json.loads(user_json)
-        except json.JSONDecodeError:
-            raise HTTPException(status_code=400, detail="Invalid user payload")
+    user_attr = getattr(parsed, "user", None)
+    try:
+        if user_attr is not None:
+            if hasattr(user_attr, "model_dump"):
+                user_obj = user_attr.model_dump()
+            elif hasattr(user_attr, "dict"):
+                user_obj = user_attr.dict()  # type: ignore[assignment]
+    except Exception:
+        user_obj = {}
 
-    return {"raw": data, "user": user_obj}
+    # Raw map for completeness
+    try:
+        pairs = parse_qsl(init_data, keep_blank_values=True, strict_parsing=True)
+        raw_map = dict(pairs)
+    except Exception:
+        raw_map = {}
+
+    return {"raw": raw_map, "user": user_obj}
 
 
 def create_access_token(payload: Dict[str, Any], expires_in_seconds: int = 60 * 60 * 24 * 7) -> str:

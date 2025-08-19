@@ -19,6 +19,20 @@ services:
       retries: 5
       start_period: 10s
 
+  front:
+    build:
+      context: ./front
+      dockerfile: Dockerfile.dev
+    container_name: task-front
+    depends_on:
+      - back
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_BASE_URL=https://api.aitasktracker.ru
+      - TELEGRAM_BOT_TOKEN=8248857120:AAHfpERo6wbWWvrk0C6abh9jJr2pKDgpuE8
+    restart: unless-stopped
+
 networks:
   default:
     name: task-network
