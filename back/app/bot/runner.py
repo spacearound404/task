@@ -182,7 +182,6 @@ async def main() -> None:
             completion = client.chat.completions.create(
                 model=ai.openai_model or "gpt-4o",
                 messages=messages,
-                temperature=0.2,
             )
             answer = completion.choices[0].message.content or ""
             logger.info("OpenAI call ok: model=%s answer_len=%s", ai.openai_model, len(answer))
