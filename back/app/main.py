@@ -9,6 +9,7 @@ from .routers import projects as projects_router
 from .routers import tasks as tasks_router
 from .routers import settings as settings_router
 from .routers import stats as stats_router
+from .routers import telegram as telegram_router
 from .routers import events as events_router
 from .db import init_db
 
@@ -33,6 +34,7 @@ def create_app() -> FastAPI:
     app.include_router(settings_router.router)
     app.include_router(stats_router.router)
     app.include_router(events_router.router)
+    app.include_router(telegram_router.router)
 
     @app.get("/")
     def root():

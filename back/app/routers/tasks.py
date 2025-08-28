@@ -6,7 +6,7 @@ from sqlmodel import Session, select
 
 from ..db import get_session
 from ..deps import get_current_user
-from ..models import Task
+from ..models import Task, TaskUpdate
 
 
 router = APIRouter(prefix="/tasks", tags=["tasks"])
@@ -70,7 +70,7 @@ def get_task(task_id: int, session: Session = Depends(get_session), current_user
 
 
 @router.put("/{task_id}", response_model=Task)
-def update_task(task_id: int, task_update: Task, session: Session = Depends(get_session), current_user=Depends(get_current_user)):
+def update_task(task_id: int, task_update: TaskUpdate, session: Session = Depends(get_session), current_user=Depends(get_current_user)):
     task = session.get(Task, task_id)
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")

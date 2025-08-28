@@ -7,5 +7,7 @@ pydantic==2.7.4
 sqlmodel==0.0.22
 SQLAlchemy==2.0.36
 
-init-data-py==0.3.0
+init-data-py==0.2.6
+openai>=1.40.0
+aiogram==3.13.1
 

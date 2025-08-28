@@ -23,3 +23,8 @@ class UserModel(BaseModel):
 class MeResponse(BaseModel):
     user: Dict[str, Any]
 
+
+class AiSettingsUpdate(BaseModel):
+    openai_api_key: Optional[str] = None
+    openai_model: Optional[str] = None
+

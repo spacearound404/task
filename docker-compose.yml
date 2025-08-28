@@ -9,6 +9,7 @@ services:
       - ./.env
     environment:
       - DATABASE_URL=sqlite:////app/var/data.db
+      - ALLOW_ANON=1
     volumes:
       - ./back/var:/app/var
     restart: unless-stopped
@@ -18,6 +19,23 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
+
+
+  bot:
+    build:
+      context: ./back
+    container_name: task-bot
+    depends_on:
+      - back
+    env_file:
+      - ./.env
+    environment:
+      - DATABASE_URL=sqlite:////app/var/data.db
+      - LOG_LEVEL=INFO
+    command: ["python", "-m", "app.bot.runner"]
+    volumes:
+      - ./back/var:/app/var
+    restart: unless-stopped
 
   front:
     build:
@@ -29,7 +47,7 @@ services:
     ports:
       - "5173:5173"
     environment:
-      - VITE_API_BASE_URL=https://api.aitasktracker.ru
+      - VITE_API_BASE_URL=https://api.aitasktracker.tech
       - TELEGRAM_BOT_TOKEN=8248857120:AAHfpERo6wbWWvrk0C6abh9jJr2pKDgpuE8
     restart: unless-stopped
 

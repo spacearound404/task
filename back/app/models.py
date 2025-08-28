@@ -31,6 +31,19 @@ class Task(SQLModel, table=True):
     project: Optional[Project] = Relationship(back_populates="tasks")
 
 
+class TaskUpdate(SQLModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    deadline: Optional[date] = None
+    duration_hours: Optional[float] = None
+    priority: Optional[str] = None  # low|medium|high
+    importance: Optional[str] = None  # low|medium|high
+    kind: Optional[str] = None  # task|event
+    event_start: Optional[datetime] = None
+    event_end: Optional[datetime] = None
+    project_id: Optional[int] = None
+
+
 class UserSettings(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     owner_id: int = Field(index=True)
@@ -44,5 +57,22 @@ class UserSettings(SQLModel, table=True):
     hours_sun: int = 9
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class AiSettings(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    owner_id: int = Field(index=True)
+    openai_api_key: Optional[str] = None
+    openai_model: str = "gpt-5"
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class ChatMessage(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    owner_id: int = Field(index=True)
+    role: str  # system|user|assistant
+    content: str
+    created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
